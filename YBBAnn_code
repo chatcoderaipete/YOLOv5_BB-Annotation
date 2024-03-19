@@ -1,0 +1,49 @@
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
+import torch
+import cv2
+import os
+
+Tk().withdraw()  # Prevents the Tk window from appearing
+image_path = askopenfilename(title="Select an Image")  # Opens a dialog box to select an image
+
+# Load YOLOv5 model
+model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+
+# Load the image
+image = cv2.imread(image_path)
+
+# Convert BGR (OpenCV format) to RGB (YOLO format)
+image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+# Perform inference
+results = model(image_rgb)
+
+# Results contain predictions and other details
+results.print()  # Print results to the console
+
+# Draw bounding boxes on the image
+results.render()
+
+# Define the new path for saving the image with detections
+save_image_path = "C:/Users/pete/Documents/datafile/Saved_YOLOv5/project1"
+
+# Extract detections
+detections = results.xyxy[0]  # Detections in XYXY format
+
+# Ensure the save directory exists
+if not os.path.exists(save_image_path):
+    os.makedirs(save_image_path)
+
+# Define the filename for the detected image
+detected_image_filename = os.path.join(save_image_path, "detected_image.jpg")
+
+# Save the image with detections
+if len(results.ims) > 0:
+    cv2.imwrite(detected_image_filename, cv2.cvtColor(results.ims[0], cv2.COLOR_RGB2BGR))
+
+# Log detections to a file
+with open(os.path.join(save_image_path, "detections_log.txt"), "w") as file:
+    file.write("x1,y1,x2,y2,confidence,class\n")
+    for *xyxy, conf, cls in detections:
+        file.write(f"{','.join(map(str, xyxy))},{conf},{cls}\n")
